@@ -3,23 +3,32 @@ from flask import Flask, request, jsonify
 import pandas as pd
 import joblib
 
-app = Flask(__name__)
-
+superkart_api = Flask(__name__)
 model = joblib.load("superkart_model.joblib")
 
-@app.route("/", methods=["GET"])
+@superkart_api.get("/")
 def home():
     return jsonify({"message": "SuperKart Sales Prediction API is running"})
 
-@app.route("/predict", methods=["POST"])
+@superkart_api.post("/v1/predict")
 def predict():
     try:
         data = request.get_json()
-        input_data = pd.DataFrame(data if isinstance(data, list) else [data])
+        input_data = pd.DataFrame([data])
+        prediction = model.predict(input_data)[0]
+        return jsonify({"prediction": float(prediction)})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
+@superkart_api.post("/v1/predictbatch")
+def predict_batch():
+    try:
+        data = request.get_json()
+        input_data = pd.DataFrame(data)
         predictions = model.predict(input_data)
         return jsonify({"predictions": predictions.tolist()})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    superkart_api.run(host="0.0.0.0", port=7860)
