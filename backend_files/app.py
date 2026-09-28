@@ -1,7 +1,7 @@
-
 from flask import Flask, request, jsonify
 import pandas as pd
 import joblib
+import io
 
 superkart_api = Flask(__name__)
 model = joblib.load("superkart_model.joblib")
@@ -23,10 +23,10 @@ def predict():
 @superkart_api.post("/v1/predictbatch")
 def predict_batch():
     try:
-        data = request.get_json()
-        input_data = pd.DataFrame(data)
+        file = request.files["file"]
+        input_data = pd.read_csv(io.BytesIO(file.read()))
         predictions = model.predict(input_data)
-        return jsonify({"predictions": predictions.tolist()})
+        return jsonify({str(i): float(prediction) for i, prediction in enumerate(predictions)})
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
